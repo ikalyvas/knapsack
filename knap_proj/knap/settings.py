@@ -75,8 +75,12 @@ WSGI_APPLICATION = 'knap.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'knapsackdb',
+        'USER': 'rainman',
+        'PASSWORD': 'Anagram14',
+        'HOST': '127.0.0.1',
+        'PORT': '3306'
     }
 }
 
@@ -122,6 +126,6 @@ STATIC_URL = '/static/'
 
 CELERY_BROKER_URL = 'amqp://localhost'
 CELERY_SEND_TASK_SENT_EVENT = True
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'rpc://'
 CELERY_IGNORE_RESULT = False
 CELERY_TRACK_STARTED = True
