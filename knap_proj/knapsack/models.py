@@ -4,15 +4,23 @@ from django.db import models
 
 
 class TasksStats(models.Model):
-    task_id = models.CharField(max_length=100, unique=True)
+
+    task_id = models.CharField(max_length=100,default=None)
     time_submitted = models.FloatField(null=True)
     time_started = models.FloatField(null=True)
     time_completed = models.FloatField(null=True)
 
 
-class Solutions(models.Model):
-    task = models.ForeignKey(TasksStats, to_field='task_id', on_delete=models.CASCADE)
+class Problem(models.Model):
+
+    task_id = models.CharField(max_length=100, default=None)
     capacity = models.IntegerField()
     weights = models.TextField()
     values = models.TextField()
 
+
+class Solution(models.Model):
+
+    task_id = models.CharField(max_length=100, default=None)
+    items = models.TextField()
+    time = models.FloatField(null=True)

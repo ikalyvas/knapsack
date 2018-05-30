@@ -4,7 +4,7 @@ import os
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'knap.settings')
 django.setup()
 
-from knapsack.models import TasksStats
+from knapsack.models import TasksStats, Solution
 
 
 def my_monitor(app):
@@ -14,7 +14,7 @@ def my_monitor(app):
         state.event(event)
         task = state.tasks.get(event['uuid'])
 
-        print("Task: %s[%s] Submitted:%s" % (task.state,task.uuid,task.timestamp))
+        print("Task: %s[%s] Submitted:%s" % (task.state, task.uuid, task.timestamp))
         task_ = TasksStats(task_id=task.uuid,
                            time_submitted=task.timestamp,
                            time_started=None,
@@ -26,11 +26,19 @@ def my_monitor(app):
         state.event(event)
         task = state.tasks.get(event['uuid'])
 
-        print("Task: %s[%s] Succeeded:%s" % (task.state, task.uuid, task.timestamp))
+        print("Task: %s[%s] Succeeded at:%s with return value: %s(%s)" % (task.state, task.uuid, task.timestamp, task.result,type(task.result)))
         task_ = TasksStats.objects.get(task_id=task.uuid)
         task_.time_completed = task.timestamp
         task_.save()
         print("Saving succeeding task into db")
+
+        items = eval(task.result)[0]
+        time = task_.time_completed - task_.time_started
+
+        solution_ = Solution(task_id=task.uuid, items=items, time=time)
+        solution_.save()
+
+
 
     def announce_started_tasks(event):
         state.event(event)

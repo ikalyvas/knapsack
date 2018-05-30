@@ -1,6 +1,6 @@
 import time
-from .models import TasksStats
-from django.shortcuts import render, redirect
+from .models import TasksStats, Problem, Solution
+from django.shortcuts import get_object_or_404, render, redirect
 from django.http import  HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.crypto import get_random_string
@@ -21,11 +21,14 @@ def create_tasks(request):
 
     task_id = res.task_id
 
+    problem = Problem(task_id=task_id, capacity=capacity, values=values, weights=weights)
+    problem.save()
+
     while True:
         try:
             task_ = TasksStats.objects.get(task_id = task_id)
         except TasksStats.DoesNotExist:
-            print("Not written into the db yet...retrying")
+            #print("Not written into the db yet...retrying")
             continue
         else:
             break
@@ -34,25 +37,49 @@ def create_tasks(request):
                          "status": "submitted",
                          "timestamps":
                              {"submitted": task_.time_submitted,
-                              "started": None, "completed": None}
+                              "started": None,
+                              "completed": None
+                              }
                          })
 
 
 def get_task(request, task_id):
 
-    res = tasks.knapsack_solver_status(task_id)
-    print("State of task %s:[%s]" %(task_id, res.state))
-    task_ = TasksStats.objects.get(task_id = task_id)
-    time_started = task_.time_started if task_.time_started != None else None
+    async_res = tasks.knapsack_solver_status(task_id)
+    print("Status of task %s:[%s] -- Solution:%s" %(task_id, async_res.status, async_res.result))
+    task_ = TasksStats.objects.get(task_id=task_id)
+    time_started = task_.time_started if task_.time_started is not None else None
     time_submitted = task_.time_submitted
-    time_completed = task_.time_completed if task_.time_completed != None else None
+    time_completed = task_.time_completed if task_.time_completed is not None else None
+    if async_res.status == 'STARTED':
+        status = 'started'
+    elif async_res.status == 'SUCCESS':
+        status = 'completed'
+    else:
+        status = None
 
     return JsonResponse({"task": task_id,
-                         "status": "submitted",
-                         "state": res.status,
+                         "status": status,
                          "timestamps":
                              {"submitted": time_submitted,
                               "started": time_started,
                               "completed": time_completed
                               }
                          })
+
+
+def get_solution(request, task_id):
+
+    solution = get_object_or_404(Solution, task_id=task_id)
+    problem = Problem.objects.get(task_id=task_id)
+
+    return JsonResponse({"task": task_id,
+                         "problem": {"capacity": problem.capacity,
+                                    "weights": problem.weights,
+                                    "values": problem.values
+                                     },
+                         "solution": {"items": solution.items,
+                                      "time": solution.time
+                                      }
+                         }
+                        )
