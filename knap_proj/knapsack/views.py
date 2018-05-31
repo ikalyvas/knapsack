@@ -1,12 +1,12 @@
-import time
 from .models import TasksStats, Problem, Solution
-from django.shortcuts import get_object_or_404, render, redirect
-from django.http import  HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from django.utils.crypto import get_random_string
-# Create your views here.
 
 from . import tasks
+from .models import TasksStats, Problem, Solution
+
+
+# Create your views here.
 
 
 @csrf_exempt
@@ -24,11 +24,12 @@ def create_tasks(request):
     problem = Problem(task_id=task_id, capacity=capacity, values=values, weights=weights)
     problem.save()
 
-    while True:
+    timer = 30
+    while timer != 0:
         try:
             task_ = TasksStats.objects.get(task_id = task_id)
         except TasksStats.DoesNotExist:
-            #print("Not written into the db yet...retrying")
+            timer -= 1
             continue
         else:
             break
@@ -81,5 +82,19 @@ def get_solution(request, task_id):
                          "solution": {"items": solution.items,
                                       "time": solution.time
                                       }
+                         }
+                        )
+
+
+def get_all_tasks(request):
+    tasks_submitted = TasksStats.objects.filter(time_submitted__isnull=False, time_started__isnull=True,
+                                                time_completed__isnull=True)
+    tasks_started = TasksStats.objects.filter(time_started__isnull=False, time_completed__isnull=True)
+    tasks_completed = TasksStats.objects.filter(time_completed__isnull=False)
+
+    return JsonResponse({"tasks": {"submitted": [task.task_id for task in tasks_submitted],
+                                   "started": [task.task_id for task in tasks_started],
+                                   "completed": [task.task_id for task in tasks_completed]
+                                   }
                          }
                         )

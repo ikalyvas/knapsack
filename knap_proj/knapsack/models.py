@@ -4,11 +4,10 @@ from django.db import models
 
 
 class TasksStats(models.Model):
-
-    task_id = models.CharField(max_length=100,default=None)
-    time_submitted = models.FloatField(null=True)
-    time_started = models.FloatField(null=True)
-    time_completed = models.FloatField(null=True)
+    task_id = models.CharField(max_length=100, default=None)
+    time_submitted = models.FloatField(null=True, default=None)
+    time_started = models.FloatField(null=True, default=None)
+    time_completed = models.FloatField(null=True, default=None)
 
 
 class Problem(models.Model):

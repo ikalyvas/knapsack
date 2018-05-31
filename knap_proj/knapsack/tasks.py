@@ -5,14 +5,12 @@ from celery.result import AsyncResult
 from ortools.algorithms import pywrapknapsack_solver
 
 
-@shared_task(track_started=True)
-def knapsack_solver(capacity, values, weights):
+@shared_task(bind=True, track_started=True)
+def knapsack_solver(self, capacity, values, weights):
     solver = pywrapknapsack_solver.KnapsackSolver(pywrapknapsack_solver.KnapsackSolver.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,'test')
-    import time
-    time.sleep(15)
+
     solver.Init(values, weights, capacity)
     computed_value = solver.Solve()
-
     packed_items = [x for x in range(0, len(weights[0]))
                     if solver.BestSolutionContains(x)]
     packed_weights = [weights[0][i] for i in packed_items]

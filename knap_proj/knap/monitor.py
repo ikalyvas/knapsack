@@ -1,6 +1,9 @@
-from .celery import app
-import django
 import os
+
+import django
+
+from .celery import app
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'knap.settings')
 django.setup()
 
@@ -15,6 +18,7 @@ def my_monitor(app):
         task = state.tasks.get(event['uuid'])
 
         print("Task: %s[%s] Submitted:%s" % (task.state, task.uuid, task.timestamp))
+
         task_ = TasksStats(task_id=task.uuid,
                            time_submitted=task.timestamp,
                            time_started=None,
@@ -26,7 +30,13 @@ def my_monitor(app):
         state.event(event)
         task = state.tasks.get(event['uuid'])
 
-        print("Task: %s[%s] Succeeded at:%s with return value: %s(%s)" % (task.state, task.uuid, task.timestamp, task.result,type(task.result)))
+        print("Task: %s[%s] Succeeded at:%s with return value: %s" % (task.state,
+                                                                      task.uuid,
+                                                                      task.timestamp,
+                                                                      task.result,
+                                                                      )
+              )
+
         task_ = TasksStats.objects.get(task_id=task.uuid)
         task_.time_completed = task.timestamp
         task_.save()
@@ -38,18 +48,16 @@ def my_monitor(app):
         solution_ = Solution(task_id=task.uuid, items=items, time=time)
         solution_.save()
 
-
-
     def announce_started_tasks(event):
         state.event(event)
         task = state.tasks.get(event['uuid'])
-        
-        print("Task %s[%s] Started:%s" % (task.state,task.uuid,task.timestamp))
+
+        print("Task %s[%s] Started:%s" % (task.state, task.uuid, task.timestamp))
         task_ = TasksStats.objects.get(task_id=task.uuid)
         task_.time_started = task.timestamp
         task_.save()
         print("Saving started task into db")
-    
+
     def announce_failed_tasks(event):
         state.event(event)
         # task name is sent only with -received event, and state
@@ -63,9 +71,9 @@ def my_monitor(app):
         print("Starting monitoring")
         recv = app.events.Receiver(connection, handlers={
                 'task-failed': announce_failed_tasks,
-                'task-started':announce_started_tasks,
-                'task-succeeded':announce_succeeded_tasks,
-                'task-received':announce_submitted_tasks,
+            'task-started': announce_started_tasks,
+            'task-succeeded': announce_succeeded_tasks,
+            'task-received': announce_submitted_tasks,
         })
         print("Capturing...")
         recv.capture(limit=None, timeout=None, wakeup=True)
