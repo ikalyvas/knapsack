@@ -1,0 +1,46 @@
+version: '3.2'
+
+services:
+  db:
+    image: mariadb
+    container_name: "mariadb"
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=secret
+      - MYSQL_USER=rainman
+      - MYSQL_PASSWORD=Anagram14
+      - MYSQL_DATABASE=knapsackdb
+    ports:
+      - "33061:3306"
+  rabbit:
+    image: rabbitmq
+    container_name: "rabbit"
+    ports:
+      - "5672:5672"
+  celery:
+    container_name: "celery"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /home/user/knap_proj
+    command: celery worker -A knap -l debug
+    volumes:
+      - type: "bind"
+        source: "./knap_proj"
+        target: "/home/user/knap_proj"
+    environment:
+      CELERY_BROKER_URL: "amqp://guest@rabbit:5672"
+
+  web:
+    container_name: "django"
+    build: .
+    command: bash -c "nohup python -m knap.monitor & python manage.py migrate && python manage.py runserver 0.0.0.0:8000 & flower --broker=amqp://guest@rabbit:5672"
+    working_dir: /home/user/knap_proj
+    volumes:
+      - type: "bind"
+        source: "./knap_proj"
+        target: "/home/user/knap_proj"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
